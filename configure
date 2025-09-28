@@ -144,9 +144,12 @@ function define_disk_layout() {
 		    define_disk_configuration_function "create_existing_partitions_layout boot=${PARTITIONING_BOOT_DEVICE@Q} swap=${swapdev@Q} type=${PARTITIONING_BOOT_TYPE@Q}" "${PARTITIONING_DEVICE@Q}" ;;
 		"zfs_centric")         define_disk_configuration_function "create_zfs_centric_layout swap=$(define_swap) type=${PARTITIONING_BOOT_TYPE@Q} encrypt=${PARTITIONING_ZFS_USE_ENCRYPTION@Q} compress=$(define_zfs_compression) pool_type=${PARTITIONING_ZFS_POOL_TYPE@Q}" "${PARTITIONING_DEVICES[@]@Q}" ;;
 		"btrfs_centric")
-			# Передаем список подтомов как строку, разделяя пробелами
-			local subvols_str="${PARTITIONING_BTRFS_SUBVOLS[*]@Q}"
-			define_disk_configuration_function "create_btrfs_centric_layout swap=$(define_swap) type=${PARTITIONING_BOOT_TYPE@Q} raid_type=${PARTITIONING_BTRFS_RAID_TYPE@Q} luks=${PARTITIONING_USE_LUKS@Q} subvols=$subvols_str" "${PARTITIONING_DEVICES[@]@Q}" ;;
+			# Передаем список подтомов как строку, разделяя пробелами, в кавычках
+			local subvols_str="${PARTITIONING_BTRFS_SUBVOLS[*]}"
+			# Оборачиваем в кавычки для безопасного вывода в строку функции
+			local subvols_quoted
+			subvols_quoted=$(printf '%q' "$subvols_str")
+			define_disk_configuration_function "create_btrfs_centric_layout swap=$(define_swap) type=${PARTITIONING_BOOT_TYPE@Q} raid_type=${PARTITIONING_BTRFS_RAID_TYPE@Q} luks=${PARTITIONING_USE_LUKS@Q} subvols=$subvols_quoted" "${PARTITIONING_DEVICES[@]@Q}" ;;
 		"raid0_luks")          define_disk_configuration_function "create_raid0_luks_layout swap=$(define_swap) type=${PARTITIONING_BOOT_TYPE@Q} luks=${PARTITIONING_USE_LUKS@Q} root_fs=${PARTITIONING_ROOT_FS@Q}" "${PARTITIONING_DEVICES[@]@Q}" ;;
 		"raid1_luks")          define_disk_configuration_function "create_raid1_luks_layout swap=$(define_swap) type=${PARTITIONING_BOOT_TYPE@Q} luks=${PARTITIONING_USE_LUKS@Q} root_fs=${PARTITIONING_ROOT_FS@Q}" "${PARTITIONING_DEVICES[@]@Q}" ;;
 		"custom")
@@ -281,7 +284,7 @@ function create_btrfs_raid_layout() {
 }
 function create_btrfs_centric_layout() {
 	PARTITIONING_SCHEME="btrfs_centric"
-	# Добавляем +subvols к известным аргументам
+	# ИЗМЕНЕНО: добавлен '+subvols' к known_arguments
 	local known_arguments=('+swap' '?type' '?raid_type' '?luks' '+subvols')
 	local extra_arguments=()
 	declare -A arguments; parse_arguments "$@"
@@ -290,7 +293,7 @@ function create_btrfs_centric_layout() {
 	PARTITIONING_BOOT_TYPE="${arguments[type]}"
 	PARTITIONING_USE_LUKS="${arguments[luks]:-false}"
 	PARTITIONING_BTRFS_RAID_TYPE="${arguments[raid_type]:-raid0}"
-	# Сохраняем подтомы, если они указаны, иначе используем значение по умолчанию
+	# ИЗМЕНЕНО: Обработка arguments[subvols]
 	if [[ -n "${arguments[subvols]:-}" ]]; then
 		# shellcheck disable=SC2206 # Разбиение строки на элементы массива
 		PARTITIONING_BTRFS_SUBVOLS=(${arguments[subvols]})
