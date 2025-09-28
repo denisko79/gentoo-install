@@ -33,7 +33,7 @@ Afterwards, proceed with the following steps:
 
 ```bash
 pacman -Sy git  # (Archlinux) Install git in live environment, then clone:
-git clone "https://github.com/oddlama/gentoo-install"
+git clone "https://github.com/denisko79/gentoo-install.git"
 cd gentoo-install
 ./configure     # configure to your liking, save as gentoo.conf
 ./install       # begin installation
